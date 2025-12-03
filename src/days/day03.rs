@@ -32,11 +32,14 @@ fn solve_b(banks: &[Vec<u32>], num_batteries: usize) -> u64 {
     banks
         .iter()
         .map(|bank| {
-            let selected_bis = (0..num_batteries).fold(vec![], |mut selected_bis, _| {
-                let bi = select_battery(bank, &selected_bis, num_batteries);
-                selected_bis.push(bi);
-                selected_bis
-            });
+            let selected_bis = (0..num_batteries).fold(
+                Vec::with_capacity(num_batteries),
+                |mut selected_bis, _| {
+                    let bi = select_battery(bank, &selected_bis, num_batteries);
+                    selected_bis.push(bi);
+                    selected_bis
+                },
+            );
             selected_bis
                 .into_iter()
                 .fold(0_u64, |acc, bi| acc * 10 + u64::from(bank[bi]))
