@@ -20,7 +20,7 @@ fn solve_a(moves: &[i32]) -> usize {
     moves
         .iter()
         .scan(50, |pos, step| {
-            *pos = (((*pos + step) % 100) + 100) % 100;
+            *pos = (*pos + step).rem_euclid(100);
             Some(*pos)
         })
         .filter(|pos| *pos == 0)
@@ -40,7 +40,7 @@ fn solve_b(moves: &[i32]) -> i32 {
             };
             let zeros =
                 if step.abs() >= zero_dist { 1 } else { 0 } + (step.abs() - zero_dist) / 100;
-            *pos = (((*pos + step) % 100) + 100) % 100;
+            *pos = (*pos + step).rem_euclid(100);
             Some(zeros)
         })
         .sum()
