@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod day01;
+pub mod day02;
 
 macro_rules! days {
     ($($day_mod:ident),*) => {
@@ -31,4 +32,4 @@ pub fn all_numbers() -> Vec<u8> {
     (1..=25).filter(|&day| get_solver(day).is_some()).collect()
 }
 
-days!(day01);
+days!(day01, day02);
