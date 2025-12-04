@@ -19,7 +19,7 @@ use std::collections::HashSet;
 use crate::common::Solution;
 
 fn parse_split_n<const N: usize>(s: &str) -> Option<[usize; N]> {
-    if s.len() % N == 0 {
+    if s.len().is_multiple_of(N) {
         let l = s.len() / N;
         let mut result = [0; N];
         for i in 0..N {
@@ -32,7 +32,7 @@ fn parse_split_n<const N: usize>(s: &str) -> Option<[usize; N]> {
 }
 
 fn parse_split(s: &str, n: usize) -> Option<Vec<usize>> {
-    if s.len() % n == 0 {
+    if s.len().is_multiple_of(n) {
         let l = s.len() / n;
         Some(
             (0..n)
@@ -47,32 +47,28 @@ fn parse_split(s: &str, n: usize) -> Option<Vec<usize>> {
 fn solve_a(ranges: &[(&str, &str)]) -> usize {
     ranges
         .iter()
+        .filter(|(ls, rs)| ls.len().is_multiple_of(2) || rs.len().is_multiple_of(2))
         .flat_map(|(ls, rs)| {
-            if ls.len() == rs.len() && ls.len() % 2 != 0 {
-                1_usize..=0_usize
+            let min = if let Some([minl, minr]) = parse_split_n(ls) {
+                if minr > minl {
+                    minl + 1
+                } else {
+                    minl
+                }
             } else {
-                let min = if let Some([minl, minr]) = parse_split_n(ls) {
-                    if minr > minl {
-                        minl + 1
-                    } else {
-                        minl
-                    }
+                10_usize.pow(u32::try_from(ls.len().div_ceil(2)).unwrap() - 1)
+            };
+            let max = if let Some([maxl, maxr]) = parse_split_n(rs) {
+                if maxr < maxl {
+                    maxl - 1
                 } else {
-                    10_usize.pow(u32::try_from(ls.len().div_ceil(2)).unwrap() - 1)
-                };
-                let max = if let Some([maxl, maxr]) = parse_split_n(rs) {
-                    if maxr < maxl {
-                        maxl - 1
-                    } else {
-                        maxl
-                    }
-                } else {
-                    10_usize.pow(u32::try_from(rs.len() / 2).unwrap()) - 1
-                };
+                    maxl
+                }
+            } else {
+                10_usize.pow(u32::try_from(rs.len() / 2).unwrap()) - 1
+            };
 
-                min..=max
-            }
-            .map(move |n| (ls, rs, n))
+            (min..=max).map(move |n| (ls, rs, n))
         })
         .map(|(ls, rs, n)| {
             let log = n.ilog10() + 1;
@@ -88,10 +84,11 @@ fn solve_b(ranges: &[(&str, &str)]) -> usize {
     ranges
         .iter()
         .flat_map(|(ls, rs)| {
-            (2..=rs.len()).flat_map(move |repeats| {
-                if ls.len() == rs.len() && ls.len() % repeats != 0 {
-                    1_usize..=0_usize
-                } else {
+            (2..=rs.len())
+                .filter(|repeats| {
+                    ls.len().is_multiple_of(*repeats) || rs.len().is_multiple_of(*repeats)
+                })
+                .flat_map(move |repeats| {
                     let min = if let Some(mins) = parse_split(ls, repeats) {
                         mins.iter().rev().fold(
                             0,
@@ -118,18 +115,16 @@ fn solve_b(ranges: &[(&str, &str)]) -> usize {
                         10_usize.pow(u32::try_from(rs.len() / repeats).unwrap()) - 1
                     };
 
-                    min..=max
-                }
-                .map(move |n| {
-                    let log = n.ilog10() + 1;
-                    let nn = (0..repeats).fold(0, |nn, i| {
-                        nn + 10_usize.pow(log * u32::try_from(i).unwrap()) * n
-                    });
-                    debug_assert!(nn >= ls.parse().unwrap());
-                    debug_assert!(nn <= rs.parse().unwrap());
-                    nn
+                    (min..=max).map(move |n| {
+                        let log = n.ilog10() + 1;
+                        let nn = (0..repeats).fold(0, |nn, i| {
+                            nn + 10_usize.pow(log * u32::try_from(i).unwrap()) * n
+                        });
+                        debug_assert!(nn >= ls.parse().unwrap());
+                        debug_assert!(nn <= rs.parse().unwrap());
+                        nn
+                    })
                 })
-            })
         })
         .collect::<HashSet<usize>>()
         .into_iter()
