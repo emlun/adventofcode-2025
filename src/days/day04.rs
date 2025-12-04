@@ -35,11 +35,41 @@ fn solve_a(grid: &[Vec<char>]) -> usize {
         .count()
 }
 
+fn solve_b(mut grid: Vec<Vec<char>>) -> usize {
+    let mut removed = 0;
+    let mut any_changed = true;
+    while any_changed {
+        any_changed = false;
+        for (r, c) in (0..grid.len())
+            .flat_map(|r| (0..grid[r].len()).map(move |c| (r as isize, c as isize)))
+            .filter(|(r, c)| grid[*r as usize][*c as usize] == '@')
+            .filter(|(r, c)| {
+                (-1_isize..=1)
+                    .flat_map(|dr| (-1_isize..=1).map(move |dc| (dr, dc)))
+                    .filter(|drc| *drc != (0, 0))
+                    .filter(|(dr, dc)| {
+                        (0..grid.len() as isize).contains(&(r + dr))
+                            && (0..grid[0].len() as isize).contains(&(c + dc))
+                    })
+                    .filter(|(dr, dc)| grid[(r + dr) as usize][(c + dc) as usize] == '@')
+                    .count()
+                    < 4
+            })
+            .collect::<Vec<_>>()
+        {
+            removed += 1;
+            any_changed = true;
+            grid[r as usize][c as usize] = '.';
+        }
+    }
+    removed
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let grid: Vec<Vec<char>> = lines
         .iter()
         .filter(|line| !line.is_empty())
         .map(|line| line.chars().collect())
         .collect();
-    (solve_a(&grid).to_string(), "".to_string())
+    (solve_a(&grid).to_string(), solve_b(grid).to_string())
 }
