@@ -33,12 +33,10 @@ fn solve_b(moves: &[i32]) -> i32 {
         .scan(50, |pos, step| {
             let zero_dist = if step.is_positive() {
                 100 - *pos
+            } else if *pos == 0 {
+                100
             } else {
-                if *pos == 0 {
-                    100
-                } else {
-                    *pos
-                }
+                *pos
             };
             let zeros =
                 if step.abs() >= zero_dist { 1 } else { 0 } + (step.abs() - zero_dist) / 100;
