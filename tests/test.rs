@@ -52,3 +52,4 @@ macro_rules! test_day {
 test_day!(day01, "1129", "6638");
 test_day!(day02, "18893502033", "26202168557");
 test_day!(day03, "17155", "169685670469164");
+test_day!(day04, "1474", "8910");
