@@ -14,21 +14,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub mod day01;
+use crate::common::Solution;
 
-macro_rules! days {
-    ($($day_mod:ident),*) => {
-        pub fn get_solver(day: u8) -> Option<fn(&[String]) -> crate::common::Solution> {
-            match format!("day{:02}", day).as_str() {
-                $(stringify!($day_mod) => Some($day_mod::solve),)*
-                    _ => None,
-            }
-        }
-    };
+fn solve_a(moves: &[i32]) -> usize {
+    moves
+        .iter()
+        .scan(50, |pos, step| {
+            *pos = (((*pos + step) % 100) + 100) % 100;
+            Some(*pos)
+        })
+        .filter(|pos| *pos == 0)
+        .count()
 }
 
-pub fn all_numbers() -> Vec<u8> {
-    (1..=25).filter(|&day| get_solver(day).is_some()).collect()
-}
+pub fn solve(lines: &[String]) -> Solution {
+    let moves: Vec<i32> = lines
+        .iter()
+        .map(|line| {
+            let sign = if line[0..1] == *"R" { 1 } else { -1 };
+            sign * line[1..].parse::<i32>().unwrap()
+        })
+        .collect();
 
-days!(day01);
+    (
+        solve_a(&moves).to_string(),
+        "".to_string(),
+        // solve_b(&moves).to_string(),
+    )
+}
