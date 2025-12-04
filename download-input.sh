@@ -19,7 +19,20 @@
 # Exit on error
 set -e
 
+if [[ -f ./download-input.env ]]; then
+  source ./download-input.env
+fi
+
 YEAR=2025
+USER_EMAIL="${USER_EMAIL}"
+USER_AGENT_VERSION=$(git rev-parse --short HEAD)
+USER_AGENT="emlun-2025/${USER_AGENT_VERSION} Operator:${USER_EMAIL} Source:https://github.com/emlun/adventofcode-2025/blob/${USER_AGENT_VERSION}/download-input.sh"
+
+if [[ -z "${USER_EMAIL}" ]]; then
+  echo "Please set the USER_EMAIL environment variable, or set it in ./download-input.env ."
+  exit 1
+fi
+
 if [[ -z "$1" ]]; then
   DAY=$(date '+%-d')
   DAY_0=$(date '+%d')
@@ -37,7 +50,11 @@ if check_time; then
   while check_time; do sleep 1; done
 fi
 
-curl --silent --cookie "session=${SESSION_COOKIE}" "https://adventofcode.com/${YEAR}/day/${DAY}/input" | tee "inputs/day${DAY_0}.in"
+curl --silent \
+     -H "User-Agent: ${USER_AGENT}" \
+     --cookie "session=${SESSION_COOKIE}" \
+     "https://adventofcode.com/${YEAR}/day/${DAY}/input" \
+  | tee "inputs/day${DAY_0}.in"
 
 if [[ -a ./inputs/.git ]]; then
   git -C inputs add "day${DAY_0}.in" && git -C inputs commit -m "Add ${YEAR} day ${DAY}"
