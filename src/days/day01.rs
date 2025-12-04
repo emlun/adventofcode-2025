@@ -27,6 +27,27 @@ fn solve_a(moves: &[i32]) -> usize {
         .count()
 }
 
+fn solve_b(moves: &[i32]) -> i32 {
+    moves
+        .iter()
+        .scan(50, |pos, step| {
+            let zero_dist = if step.is_positive() {
+                100 - *pos
+            } else {
+                if *pos == 0 {
+                    100
+                } else {
+                    *pos
+                }
+            };
+            let zeros =
+                if step.abs() >= zero_dist { 1 } else { 0 } + (step.abs() - zero_dist) / 100;
+            *pos = (((*pos + step) % 100) + 100) % 100;
+            Some(zeros)
+        })
+        .sum()
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let moves: Vec<i32> = lines
         .iter()
@@ -36,9 +57,5 @@ pub fn solve(lines: &[String]) -> Solution {
         })
         .collect();
 
-    (
-        solve_a(&moves).to_string(),
-        "".to_string(),
-        // solve_b(&moves).to_string(),
-    )
+    (solve_a(&moves).to_string(), solve_b(&moves).to_string())
 }
