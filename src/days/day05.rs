@@ -18,10 +18,7 @@ use std::ops::RangeInclusive;
 
 use crate::common::Solution;
 
-fn merge<T>(
-    a: RangeInclusive<T>,
-    b: RangeInclusive<T>,
-) -> (RangeInclusive<T>, Option<RangeInclusive<T>>)
+fn merge<T>(a: &RangeInclusive<T>, b: &RangeInclusive<T>) -> Option<RangeInclusive<T>>
 where
     T: Copy,
     T: Ord,
@@ -29,33 +26,28 @@ where
     if a.start() > b.start() {
         merge(b, a)
     } else if b.start() > a.end() {
-        (a, Some(b))
+        None
     } else {
-        ((*a.start())..=(*std::cmp::max(a.end(), b.end())), None)
+        Some((*a.start())..=(*std::cmp::max(a.end(), b.end())))
     }
 }
 
-fn merge_all<T>(ranges: Vec<RangeInclusive<T>>) -> Vec<RangeInclusive<T>>
+fn merge_all<T>(mut ranges: Vec<RangeInclusive<T>>) -> Vec<RangeInclusive<T>>
 where
     T: Copy,
     T: Ord,
 {
-    let mut it = ranges.into_iter();
-    if let Some(first) = it.next() {
-        let (mut merged, last) = it.fold((Vec::new(), first), |(mut result, last), next| {
-            let (a, b) = merge(last, next);
-            if let Some(b) = b {
-                result.push(a);
-                (result, b)
-            } else {
-                (result, a)
-            }
-        });
-        merged.push(last);
-        merged
-    } else {
-        Vec::new()
+    let mut i_current = 0;
+    for ii in 1..ranges.len() {
+        if let Some(merged) = merge(&ranges[i_current], &ranges[ii]) {
+            ranges[i_current] = merged;
+        } else {
+            i_current += 1;
+            ranges[i_current] = ranges[ii].clone();
+        }
     }
+    ranges.truncate(i_current + 1);
+    ranges
 }
 
 fn solve_a(fresh: &[RangeInclusive<usize>], ids: &[usize]) -> usize {
