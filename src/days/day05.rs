@@ -64,23 +64,17 @@ fn solve_b(fresh: Vec<RangeInclusive<usize>>) -> usize {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let (mut fresh, ids, _): (Vec<RangeInclusive<usize>>, Vec<usize>, bool) = lines.iter().fold(
-        (Vec::new(), Vec::new(), false),
-        |(mut fresh, mut ids, parse_ids), line| {
-            if line.is_empty() {
-                (fresh, ids, true)
-            } else if parse_ids {
-                ids.push(line.parse().unwrap());
-                (fresh, ids, parse_ids)
-            } else {
-                let (l, r) = line.trim().split_once('-').unwrap();
-                fresh.push(l.parse().unwrap()..=r.parse().unwrap());
-                (fresh, ids, parse_ids)
-            }
-        },
-    );
-    fresh.sort_by_key(|range| *range.start());
-    fresh = merge_all(fresh);
+    let (fresh, ids): (Vec<RangeInclusive<usize>>, Vec<usize>) = {
+        let mut fresh = Vec::new();
+        let mut it = lines.iter();
+        while let Some((l, r)) = it.next().and_then(|line| line.trim().split_once('-')) {
+            fresh.push(l.parse().unwrap()..=r.parse().unwrap());
+        }
+        fresh.sort_by_key(|range| *range.start());
+        fresh = merge_all(fresh);
+        let ids = it.flat_map(|line| line.trim().parse().ok()).collect();
+        (fresh, ids)
+    };
     (
         solve_a(&fresh, &ids).to_string(),
         solve_b(fresh).to_string(),
