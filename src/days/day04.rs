@@ -22,12 +22,18 @@ fn neighbors<'a, 'b>(
     rolls: &'a [Vec<bool>],
     (r, c): &'b (usize, usize),
 ) -> impl Iterator<Item = (usize, usize)> + use<'a, 'b> {
-    let h = rolls.len();
-    let w = rolls[0].len();
-    (r.saturating_sub(1)..(std::cmp::min(h, r + 2)))
-        .flat_map(move |r| (c.saturating_sub(1)..(std::cmp::min(w, c + 2))).map(move |c| (r, c)))
-        .filter(|rrcc| *rrcc != (*r, *c))
-        .filter(|(rr, cc)| rolls[*rr][*cc])
+    [
+        (r - 1, c - 1),
+        (r - 1, *c),
+        (r - 1, c + 1),
+        (*r, c - 1),
+        (*r, c + 1),
+        (r + 1, c - 1),
+        (r + 1, *c),
+        (r + 1, c + 1),
+    ]
+    .into_iter()
+    .filter(|(rr, cc)| rolls[*rr][*cc])
 }
 
 fn solve_a(
@@ -61,26 +67,23 @@ pub fn solve(lines: &[String]) -> Solution {
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
         .enumerate()
+        .map(|(r, el)| (r + 1, el))
         .fold(
             (
-                Vec::with_capacity(lines.len()),
+                vec![vec![false; lines[0].len() + 2]; lines.len() + 2],
                 VecDeque::with_capacity(lines.len() * lines[0].len() / 2),
             ),
-            |(mut grid, rolls), (r, line)| {
-                let (row, rolls) = line.chars().enumerate().fold(
-                    (Vec::with_capacity(line.len()), rolls),
-                    move |(mut row, mut rolls), (c, ch)| {
+            |(grid, rolls), (r, line)| {
+                line.chars().enumerate().map(|(c, el)| (c + 1, el)).fold(
+                    (grid, rolls),
+                    move |(mut grid, mut rolls), (c, ch)| {
                         if ch == '@' {
-                            row.push(true);
+                            grid[r][c] = true;
                             rolls.push_back((r, c));
-                        } else {
-                            row.push(false);
                         }
-                        (row, rolls)
+                        (grid, rolls)
                     },
-                );
-                grid.push(row);
-                (grid, rolls)
+                )
             },
         );
     (
