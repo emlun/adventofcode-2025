@@ -33,20 +33,18 @@ fn neighbors<'a, 'b>(
         .filter(|(rr, cc)| rolls[*rr][*cc])
 }
 
-fn solve_a(rolls: &[Vec<bool>]) -> usize {
-    (0..rolls.len())
-        .flat_map(|r| (0..rolls[0].len()).map(move |c| (r, c)))
-        .filter(|(r, c)| rolls[*r][*c])
-        .filter(|rc| neighbors(&rolls, rc).count() < 4)
+fn solve_a(
+    grid: &[Vec<bool>],
+    (rolls_a, rolls_b): (&[(usize, usize)], &[(usize, usize)]),
+) -> usize {
+    rolls_a
+        .iter()
+        .chain(rolls_b.iter())
+        .filter(|rc| neighbors(grid, rc).count() < 4)
         .count()
 }
 
-fn solve_b(mut rolls: Vec<Vec<bool>>) -> usize {
-    let mut remove_queue: VecDeque<(usize, usize)> = (0..rolls.len())
-        .flat_map(|r| (0..rolls[0].len()).map(move |c| (r, c)))
-        .filter(|(r, c)| rolls[*r][*c])
-        .filter(|rc| neighbors(&rolls, rc).count() < 4)
-        .collect::<VecDeque<_>>();
+fn solve_b(mut rolls: Vec<Vec<bool>>, mut remove_queue: VecDeque<(usize, usize)>) -> usize {
     let mut removed = 0;
     while let Some((r, c)) = remove_queue.pop_front() {
         if rolls[r][c] && neighbors(&rolls, &(r, c)).count() < 4 {
@@ -61,11 +59,35 @@ fn solve_b(mut rolls: Vec<Vec<bool>>) -> usize {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let rolls: Vec<Vec<bool>> = lines
+    let (grid, rolls): (Vec<Vec<bool>>, VecDeque<(usize, usize)>) = lines
         .iter()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
-        .map(|line| line.chars().map(move |ch| ch == '@').collect())
-        .collect();
-    (solve_a(&rolls).to_string(), solve_b(rolls).to_string())
+        .enumerate()
+        .fold(
+            (
+                Vec::with_capacity(lines.len()),
+                VecDeque::with_capacity(lines.len() * lines[0].len() / 2),
+            ),
+            |(mut grid, rolls), (r, line)| {
+                let (row, rolls) = line.chars().enumerate().fold(
+                    (Vec::with_capacity(line.len()), rolls),
+                    move |(mut row, mut rolls), (c, ch)| {
+                        if ch == '@' {
+                            row.push(true);
+                            rolls.push_back((r, c));
+                        } else {
+                            row.push(false);
+                        }
+                        (row, rolls)
+                    },
+                );
+                grid.push(row);
+                (grid, rolls)
+            },
+        );
+    (
+        solve_a(&grid, rolls.as_slices()).to_string(),
+        solve_b(grid, rolls).to_string(),
+    )
 }
