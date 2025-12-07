@@ -22,14 +22,11 @@ fn neighbors<'a, 'b>(
     rolls: &'a [Vec<bool>],
     (r, c): &'b (usize, usize),
 ) -> impl Iterator<Item = (usize, usize)> + use<'a, 'b> {
-    (-1_isize..=1)
-        .flat_map(|dr| (-1_isize..=1).map(move |dc| (dr, dc)))
-        .filter(|drc| *drc != (0, 0))
-        .filter_map(move |(dr, dc)| {
-            let rr = r.checked_add_signed(dr)?;
-            let cc = c.checked_add_signed(dc)?;
-            Some((rr, cc)).filter(|(rr, cc)| *rr < rolls.len() && *cc < rolls[0].len())
-        })
+    let h = rolls.len();
+    let w = rolls[0].len();
+    (r.saturating_sub(1)..(std::cmp::min(h, r + 2)))
+        .flat_map(move |r| (c.saturating_sub(1)..(std::cmp::min(w, c + 2))).map(move |c| (r, c)))
+        .filter(|rrcc| *rrcc != (*r, *c))
         .filter(|(rr, cc)| rolls[*rr][*cc])
 }
 
