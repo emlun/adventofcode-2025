@@ -19,11 +19,17 @@ use std::collections::HashMap;
 use crate::common::Solution;
 
 pub fn solve(lines: &[String]) -> Solution {
-    let paths = HashMap::with_capacity(lines[0].len());
+    let start = lines.iter().find_map(|line| line.find('S')).unwrap();
+    let paths = {
+        let mut paths = HashMap::with_capacity(lines[0].len());
+        paths.insert(start, 1);
+        paths
+    };
     let (paths, sol_a): (HashMap<usize, u64>, usize) = lines
         .iter()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
+        .skip(1)
         .fold((paths, 0), |(paths, splits), line| {
             line.chars()
                 .enumerate()
@@ -36,9 +42,6 @@ pub fn solve(lines: &[String]) -> Solution {
                         } else {
                             (paths, splits)
                         }
-                    } else if ch == 'S' {
-                        paths.insert(i, 1);
-                        (paths, splits)
                     } else {
                         (paths, splits)
                     }
