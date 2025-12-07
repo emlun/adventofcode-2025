@@ -14,34 +14,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use crate::common::Solution;
 
 pub fn solve(lines: &[String]) -> Solution {
-    let (_, splits): (HashSet<usize>, usize) = lines
+    let (paths, sol_a): (HashMap<usize, u64>, usize) = lines
         .iter()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
-        .fold((HashSet::new(), 0), |(beams, splits), line| {
+        .fold((HashMap::new(), 0), |(paths, splits), line| {
             line.chars()
                 .enumerate()
-                .fold((beams, splits), |(mut beams, splits), (i, ch)| {
+                .fold((paths, splits), |(mut paths, splits), (i, ch)| {
                     if ch == '^' {
-                        if beams.remove(&i) {
-                            beams.insert(i - 1);
-                            beams.insert(i + 1);
-                            (beams, splits + 1)
+                        if let Some(num_paths) = paths.remove(&i) {
+                            *paths.entry(i - 1).or_insert(0) += num_paths;
+                            *paths.entry(i + 1).or_insert(0) += num_paths;
+                            (paths, splits + 1)
                         } else {
-                            (beams, splits)
+                            (paths, splits)
                         }
                     } else if ch == 'S' {
-                        beams.insert(i);
-                        (beams, splits)
+                        paths.insert(i, 1);
+                        (paths, splits)
                     } else {
-                        (beams, splits)
+                        (paths, splits)
                     }
                 })
         });
-    (splits.to_string(), "".to_string())
+    let sol_b: u64 = paths.values().sum();
+    (sol_a.to_string(), sol_b.to_string())
 }
