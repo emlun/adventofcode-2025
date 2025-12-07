@@ -14,62 +14,58 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::collections::VecDeque;
+
 use crate::common::Solution;
 
-fn solve_a(grid: &[Vec<char>]) -> usize {
-    (0..grid.len())
-        .flat_map(|r| (0..grid[r].len()).map(move |c| (r as isize, c as isize)))
-        .filter(|(r, c)| grid[*r as usize][*c as usize] == '@')
-        .filter(|(r, c)| {
-            (-1_isize..=1)
-                .flat_map(|dr| (-1_isize..=1).map(move |dc| (dr, dc)))
-                .filter(|drc| *drc != (0, 0))
-                .filter(|(dr, dc)| {
-                    (0..grid.len() as isize).contains(&(r + dr))
-                        && (0..grid[0].len() as isize).contains(&(c + dc))
-                })
-                .filter(|(dr, dc)| grid[(r + dr) as usize][(c + dc) as usize] == '@')
-                .count()
-                < 4
+fn neighbors<'a, 'b>(
+    rolls: &'a [Vec<bool>],
+    (r, c): &'b (usize, usize),
+) -> impl Iterator<Item = (usize, usize)> + use<'a, 'b> {
+    (-1_isize..=1)
+        .flat_map(|dr| (-1_isize..=1).map(move |dc| (dr, dc)))
+        .filter(|drc| *drc != (0, 0))
+        .filter_map(move |(dr, dc)| {
+            let rr = r.checked_add_signed(dr)?;
+            let cc = c.checked_add_signed(dc)?;
+            Some((rr, cc)).filter(|(rr, cc)| *rr < rolls.len() && *cc < rolls[0].len())
         })
+        .filter(|(rr, cc)| rolls[*rr][*cc])
+}
+
+fn solve_a(rolls: &[Vec<bool>]) -> usize {
+    (0..rolls.len())
+        .flat_map(|r| (0..rolls[0].len()).map(move |c| (r, c)))
+        .filter(|(r, c)| rolls[*r][*c])
+        .filter(|rc| neighbors(&rolls, rc).count() < 4)
         .count()
 }
 
-fn solve_b(mut grid: Vec<Vec<char>>) -> usize {
+fn solve_b(mut rolls: Vec<Vec<bool>>) -> usize {
+    let mut remove_queue: VecDeque<(usize, usize)> = (0..rolls.len())
+        .flat_map(|r| (0..rolls[0].len()).map(move |c| (r, c)))
+        .filter(|(r, c)| rolls[*r][*c])
+        .filter(|rc| neighbors(&rolls, rc).count() < 4)
+        .collect::<VecDeque<_>>();
     let mut removed = 0;
-    let mut any_changed = true;
-    while any_changed {
-        any_changed = false;
-        for (r, c) in (0..grid.len())
-            .flat_map(|r| (0..grid[r].len()).map(move |c| (r as isize, c as isize)))
-            .filter(|(r, c)| grid[*r as usize][*c as usize] == '@')
-            .filter(|(r, c)| {
-                (-1_isize..=1)
-                    .flat_map(|dr| (-1_isize..=1).map(move |dc| (dr, dc)))
-                    .filter(|drc| *drc != (0, 0))
-                    .filter(|(dr, dc)| {
-                        (0..grid.len() as isize).contains(&(r + dr))
-                            && (0..grid[0].len() as isize).contains(&(c + dc))
-                    })
-                    .filter(|(dr, dc)| grid[(r + dr) as usize][(c + dc) as usize] == '@')
-                    .count()
-                    < 4
-            })
-            .collect::<Vec<_>>()
-        {
+    while let Some((r, c)) = remove_queue.pop_front() {
+        if rolls[r][c] && neighbors(&rolls, &(r, c)).count() < 4 {
             removed += 1;
-            any_changed = true;
-            grid[r as usize][c as usize] = '.';
+            rolls[r][c] = false;
+            for rrcc in neighbors(&rolls, &(r, c)) {
+                remove_queue.push_back(rrcc);
+            }
         }
     }
     removed
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let grid: Vec<Vec<char>> = lines
+    let rolls: Vec<Vec<bool>> = lines
         .iter()
+        .map(|line| line.trim())
         .filter(|line| !line.is_empty())
-        .map(|line| line.chars().collect())
+        .map(|line| line.chars().map(move |ch| ch == '@').collect())
         .collect();
-    (solve_a(&grid).to_string(), solve_b(grid).to_string())
+    (solve_a(&rolls).to_string(), solve_b(rolls).to_string())
 }
