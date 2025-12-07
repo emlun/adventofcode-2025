@@ -19,11 +19,12 @@ use std::collections::HashMap;
 use crate::common::Solution;
 
 pub fn solve(lines: &[String]) -> Solution {
+    let paths = HashMap::with_capacity(lines[0].len());
     let (paths, sol_a): (HashMap<usize, u64>, usize) = lines
         .iter()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
-        .fold((HashMap::new(), 0), |(paths, splits), line| {
+        .fold((paths, 0), |(paths, splits), line| {
             line.chars()
                 .enumerate()
                 .fold((paths, splits), |(mut paths, splits), (i, ch)| {
