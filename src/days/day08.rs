@@ -68,7 +68,7 @@ fn connect(
     }
 }
 
-fn solve_a(by_dist: &[(usize, usize)]) -> usize {
+fn solve_ab(points: &[Point], by_dist: &[(usize, usize)]) -> (usize, i64) {
     let mut circuits: HashMap<usize, HashSet<usize>> = HashMap::new();
     let mut circuit_membership: HashMap<usize, usize> = HashMap::new();
     let mut next_circuit_id = 0;
@@ -85,15 +85,9 @@ fn solve_a(by_dist: &[(usize, usize)]) -> usize {
 
     let mut lens: Vec<usize> = circuits.values().map(|c| c.len()).collect();
     lens.sort();
-    lens.into_iter().rev().take(3).product()
-}
+    let sol_a = lens.into_iter().rev().take(3).product();
 
-fn solve_b(points: &[Point], by_dist: &[(usize, usize)]) -> i64 {
-    let mut circuits: HashMap<usize, HashSet<usize>> = HashMap::new();
-    let mut circuit_membership: HashMap<usize, usize> = HashMap::new();
-    let mut next_circuit_id = 0;
-
-    for (ip, iq) in by_dist.iter().copied() {
+    for (ip, iq) in by_dist[1000..].iter().copied() {
         connect(
             &mut circuits,
             &mut circuit_membership,
@@ -103,7 +97,7 @@ fn solve_b(points: &[Point], by_dist: &[(usize, usize)]) -> i64 {
         );
 
         if circuits.len() == 1 && circuit_membership.len() == points.len() {
-            return points[ip].0 * points[iq].0;
+            return (sol_a, points[ip].0 * points[iq].0);
         }
     }
 
@@ -139,8 +133,6 @@ pub fn solve(lines: &[String]) -> Solution {
         by_dist
     };
 
-    (
-        solve_a(&by_dist).to_string(),
-        solve_b(&points, &by_dist).to_string(),
-    )
+    let (sol_a, sol_b) = solve_ab(&points, &by_dist);
+    (sol_a.to_string(), sol_b.to_string())
 }
