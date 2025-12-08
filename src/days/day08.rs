@@ -29,42 +29,58 @@ impl Point {
     }
 }
 
+fn connect(
+    circuits: &mut HashMap<usize, HashSet<usize>>,
+    circuit_membership: &mut HashMap<usize, usize>,
+    next_circuit_id: &mut usize,
+    ip: usize,
+    iq: usize,
+) {
+    match (
+        circuit_membership.get(&ip).copied(),
+        circuit_membership.get(&iq).copied(),
+    ) {
+        (None, None) => {
+            circuits.insert(*next_circuit_id, [ip, iq].into_iter().collect());
+            circuit_membership.insert(ip, *next_circuit_id);
+            circuit_membership.insert(iq, *next_circuit_id);
+            *next_circuit_id += 1;
+        }
+        (Some(circuit_id), None) => {
+            circuits.get_mut(&circuit_id).unwrap().insert(iq);
+            circuit_membership.insert(iq, circuit_id);
+        }
+        (None, Some(circuit_id)) => {
+            circuits.get_mut(&circuit_id).unwrap().insert(ip);
+            circuit_membership.insert(ip, circuit_id);
+        }
+        (Some(circuit_id_p), Some(circuit_id_q)) => {
+            if circuit_id_p != circuit_id_q {
+                if let Some(circuit_q) = circuits.remove(&circuit_id_q) {
+                    let circuit_p = circuits.get_mut(&circuit_id_p).unwrap();
+                    for iqq in circuit_q {
+                        *circuit_membership.get_mut(&iqq).unwrap() = circuit_id_p;
+                        circuit_p.insert(iqq);
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn solve_a(by_dist: &[(usize, usize)]) -> usize {
     let mut circuits: HashMap<usize, HashSet<usize>> = HashMap::new();
     let mut circuit_membership: HashMap<usize, usize> = HashMap::new();
     let mut next_circuit_id = 0;
 
     for (ip, iq) in by_dist.iter().copied().take(1000) {
-        match (
-            circuit_membership.get(&ip).copied(),
-            circuit_membership.get(&iq).copied(),
-        ) {
-            (None, None) => {
-                circuits.insert(next_circuit_id, [ip, iq].into_iter().collect());
-                circuit_membership.insert(ip, next_circuit_id);
-                circuit_membership.insert(iq, next_circuit_id);
-                next_circuit_id += 1;
-            }
-            (Some(circuit_id), None) => {
-                circuits.get_mut(&circuit_id).unwrap().insert(iq);
-                circuit_membership.insert(iq, circuit_id);
-            }
-            (None, Some(circuit_id)) => {
-                circuits.get_mut(&circuit_id).unwrap().insert(ip);
-                circuit_membership.insert(ip, circuit_id);
-            }
-            (Some(circuit_id_p), Some(circuit_id_q)) => {
-                if circuit_id_p != circuit_id_q {
-                    if let Some(circuit_q) = circuits.remove(&circuit_id_q) {
-                        let circuit_p = circuits.get_mut(&circuit_id_p).unwrap();
-                        for iqq in circuit_q {
-                            *circuit_membership.get_mut(&iqq).unwrap() = circuit_id_p;
-                            circuit_p.insert(iqq);
-                        }
-                    }
-                }
-            }
-        }
+        connect(
+            &mut circuits,
+            &mut circuit_membership,
+            &mut next_circuit_id,
+            ip,
+            iq,
+        );
     }
 
     let mut lens: Vec<usize> = circuits.values().map(|c| c.len()).collect();
@@ -78,36 +94,13 @@ fn solve_b(points: &[Point], by_dist: &[(usize, usize)]) -> i64 {
     let mut next_circuit_id = 0;
 
     for (ip, iq) in by_dist.iter().copied() {
-        match (
-            circuit_membership.get(&ip).copied(),
-            circuit_membership.get(&iq).copied(),
-        ) {
-            (None, None) => {
-                circuits.insert(next_circuit_id, [ip, iq].into_iter().collect());
-                circuit_membership.insert(ip, next_circuit_id);
-                circuit_membership.insert(iq, next_circuit_id);
-                next_circuit_id += 1;
-            }
-            (Some(circuit_id), None) => {
-                circuits.get_mut(&circuit_id).unwrap().insert(iq);
-                circuit_membership.insert(iq, circuit_id);
-            }
-            (None, Some(circuit_id)) => {
-                circuits.get_mut(&circuit_id).unwrap().insert(ip);
-                circuit_membership.insert(ip, circuit_id);
-            }
-            (Some(circuit_id_p), Some(circuit_id_q)) => {
-                if circuit_id_p != circuit_id_q {
-                    if let Some(circuit_q) = circuits.remove(&circuit_id_q) {
-                        let circuit_p = circuits.get_mut(&circuit_id_p).unwrap();
-                        for iqq in circuit_q {
-                            *circuit_membership.get_mut(&iqq).unwrap() = circuit_id_p;
-                            circuit_p.insert(iqq);
-                        }
-                    }
-                }
-            }
-        }
+        connect(
+            &mut circuits,
+            &mut circuit_membership,
+            &mut next_circuit_id,
+            ip,
+            iq,
+        );
 
         if circuits.len() == 1 && circuit_membership.len() == points.len() {
             return points[ip].0 * points[iq].0;
