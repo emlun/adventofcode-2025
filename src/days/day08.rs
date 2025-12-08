@@ -130,16 +130,15 @@ pub fn solve(lines: &[String]) -> Solution {
         .collect();
 
     let by_dist: Vec<(usize, usize)> = {
-        let by_dist: HashSet<(usize, usize)> = points
+        let by_dist: Vec<(usize, usize)> = points
             .iter()
             .enumerate()
             .flat_map(|(ip, _)| {
                 points
                     .iter()
                     .enumerate()
-                    .filter(move |(iq, _)| *iq != ip)
+                    .skip(ip + 1)
                     .map(move |(iq, _)| (ip, iq))
-                    .map(|(ip, iq)| if ip < iq { (ip, iq) } else { (iq, ip) })
             })
             .collect();
         let mut by_dist: Vec<(usize, usize)> = by_dist.into_iter().collect();
