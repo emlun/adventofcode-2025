@@ -29,30 +29,12 @@ impl Point {
     }
 }
 
-fn solve_a(points: &[Point]) -> usize {
-    let by_dist: Vec<(usize, usize)> = {
-        let by_dist: HashSet<(usize, usize)> = points
-            .iter()
-            .enumerate()
-            .flat_map(|(ip, _)| {
-                points
-                    .iter()
-                    .enumerate()
-                    .filter(move |(iq, _)| *iq != ip)
-                    .map(move |(iq, _)| (ip, iq))
-                    .map(|(ip, iq)| if ip < iq { (ip, iq) } else { (iq, ip) })
-            })
-            .collect();
-        let mut by_dist: Vec<(usize, usize)> = by_dist.into_iter().collect();
-        by_dist.sort_by_key(|(ip, iq)| points[*ip].dist2(&points[*iq]));
-        by_dist
-    };
-
+fn solve_a(by_dist: &[(usize, usize)]) -> usize {
     let mut circuits: HashMap<usize, HashSet<usize>> = HashMap::new();
     let mut circuit_membership: HashMap<usize, usize> = HashMap::new();
     let mut next_circuit_id = 0;
 
-    for (ip, iq) in by_dist.into_iter().take(1000) {
+    for (ip, iq) in by_dist.iter().copied().take(1000) {
         match (
             circuit_membership.get(&ip).copied(),
             circuit_membership.get(&iq).copied(),
@@ -90,8 +72,53 @@ fn solve_a(points: &[Point]) -> usize {
     lens.into_iter().rev().take(3).product()
 }
 
+fn solve_b(points: &[Point], by_dist: &[(usize, usize)]) -> i64 {
+    let mut circuits: HashMap<usize, HashSet<usize>> = HashMap::new();
+    let mut circuit_membership: HashMap<usize, usize> = HashMap::new();
+    let mut next_circuit_id = 0;
+
+    for (ip, iq) in by_dist.iter().copied() {
+        match (
+            circuit_membership.get(&ip).copied(),
+            circuit_membership.get(&iq).copied(),
+        ) {
+            (None, None) => {
+                circuits.insert(next_circuit_id, [ip, iq].into_iter().collect());
+                circuit_membership.insert(ip, next_circuit_id);
+                circuit_membership.insert(iq, next_circuit_id);
+                next_circuit_id += 1;
+            }
+            (Some(circuit_id), None) => {
+                circuits.get_mut(&circuit_id).unwrap().insert(iq);
+                circuit_membership.insert(iq, circuit_id);
+            }
+            (None, Some(circuit_id)) => {
+                circuits.get_mut(&circuit_id).unwrap().insert(ip);
+                circuit_membership.insert(ip, circuit_id);
+            }
+            (Some(circuit_id_p), Some(circuit_id_q)) => {
+                if circuit_id_p != circuit_id_q {
+                    if let Some(circuit_q) = circuits.remove(&circuit_id_q) {
+                        let circuit_p = circuits.get_mut(&circuit_id_p).unwrap();
+                        for iqq in circuit_q {
+                            *circuit_membership.get_mut(&iqq).unwrap() = circuit_id_p;
+                            circuit_p.insert(iqq);
+                        }
+                    }
+                }
+            }
+        }
+
+        if circuits.len() == 1 && circuit_membership.len() == points.len() {
+            return points[ip].0 * points[iq].0;
+        }
+    }
+
+    unreachable!()
+}
+
 pub fn solve(lines: &[String]) -> Solution {
-    let boxes: Vec<Point> = lines
+    let points: Vec<Point> = lines
         .iter()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
@@ -101,5 +128,27 @@ pub fn solve(lines: &[String]) -> Solution {
             Point(x.parse().unwrap(), y.parse().unwrap(), z.parse().unwrap())
         })
         .collect();
-    (solve_a(&boxes).to_string(), "".to_string())
+
+    let by_dist: Vec<(usize, usize)> = {
+        let by_dist: HashSet<(usize, usize)> = points
+            .iter()
+            .enumerate()
+            .flat_map(|(ip, _)| {
+                points
+                    .iter()
+                    .enumerate()
+                    .filter(move |(iq, _)| *iq != ip)
+                    .map(move |(iq, _)| (ip, iq))
+                    .map(|(ip, iq)| if ip < iq { (ip, iq) } else { (iq, ip) })
+            })
+            .collect();
+        let mut by_dist: Vec<(usize, usize)> = by_dist.into_iter().collect();
+        by_dist.sort_by_key(|(ip, iq)| points[*ip].dist2(&points[*iq]));
+        by_dist
+    };
+
+    (
+        solve_a(&by_dist).to_string(),
+        solve_b(&points, &by_dist).to_string(),
+    )
 }
