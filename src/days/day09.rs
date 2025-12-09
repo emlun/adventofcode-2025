@@ -16,7 +16,7 @@
 
 use std::ops::Range;
 
-use crate::{common::Solution, util::iter::Countable};
+use crate::common::Solution;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 struct Point {
@@ -26,13 +26,6 @@ struct Point {
 impl Point {
     fn area(&self, other: &Self) -> u64 {
         (1 + self.x.abs_diff(other.x)) * (1 + self.y.abs_diff(other.y))
-    }
-
-    fn polarity(&self, i: usize, l: &Self, r: &Self) -> bool {
-        ((((self.x - l.x).signum() + (self.y - l.y).signum())
-            * ((r.x - self.x).signum() + (r.y - self.y).signum()))
-            > 0)
-            == i.is_multiple_of(2)
     }
 }
 
@@ -137,39 +130,6 @@ pub fn solve(lines: &[String]) -> Solution {
             false
         }),
         "Expected no straight lines between triples of red tiles"
-    );
-
-    let polarity: Vec<bool> = std::iter::once(points[0].polarity(
-        points.len() - 1,
-        &points[points.len() - 1],
-        &points[1],
-    ))
-    .chain(points.windows(3).enumerate().flat_map(|(i, window)| {
-        if let [p, q, r] = window {
-            Some(q.polarity(i, p, r))
-        } else {
-            None
-        }
-    }))
-    .chain(std::iter::once(points[points.len() - 1].polarity(
-        points.len() - 2,
-        &points[points.len() - 2],
-        &points[0],
-    )))
-    .collect();
-
-    debug_assert!(
-        polarity
-            .windows(4)
-            .all(|corners| !corners[1..].iter().all(|c| *c != corners[0])),
-        "Detected knot in input tile loop"
-    );
-    debug_assert!(
-        {
-            let counts = polarity.iter().counts();
-            counts[&true].abs_diff(counts[&false]) == 4
-        },
-        "Input tile loop is not closed"
     );
 
     (solve_a(&points).to_string(), solve_b(&points).to_string())
