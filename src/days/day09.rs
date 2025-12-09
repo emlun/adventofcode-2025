@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::ops::Range;
-
 use crate::common::Solution;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -35,10 +33,6 @@ struct Line {
     q: Point,
 }
 
-fn interval_interior(a: i64, b: i64) -> Range<i64> {
-    (std::cmp::min(a, b) + 1)..std::cmp::max(a, b)
-}
-
 fn minmax<T: Ord>(a: T, b: T) -> (T, T) {
     if b < a {
         (b, a)
@@ -48,22 +42,16 @@ fn minmax<T: Ord>(a: T, b: T) -> (T, T) {
 }
 
 fn intersects_interior(line: &Line, (rp, rq): (&Point, &Point)) -> bool {
-    let rect_x = interval_interior(rp.x, rq.x);
-    let rect_y = interval_interior(rp.y, rq.y);
     let (rminx, rmaxx) = minmax(rp.x, rq.x);
     let (rminy, rmaxy) = minmax(rp.y, rq.y);
     let (lminx, lmaxx) = minmax(line.p.x, line.q.x);
     let (lminy, lmaxy) = minmax(line.p.y, line.q.y);
+    let rect_x = (rminx + 1)..rmaxx;
+    let rect_y = (rminy + 1)..rmaxy;
     if line.p.x == line.q.x {
-        rect_x.contains(&line.p.x)
-            && (rect_y.contains(&line.p.y)
-                || rect_y.contains(&line.q.y)
-                || !(lmaxy <= rminy || lminy >= rmaxy))
+        rect_x.contains(&line.p.x) && !(lmaxy <= rminy || lminy >= rmaxy)
     } else {
-        rect_y.contains(&line.p.y)
-            && (rect_x.contains(&line.p.x)
-                || rect_x.contains(&line.q.x)
-                || !(lmaxx <= rminx || lminx >= rmaxx))
+        rect_y.contains(&line.p.y) && !(lmaxx <= rminx || lminx >= rmaxx)
     }
 }
 
