@@ -84,17 +84,15 @@ fn solve_b(points: &[Point]) -> u64 {
     points
         .iter()
         .enumerate()
-        .flat_map(|(ip, p)| {
-            points.iter().skip(ip + 1).filter_map(|q| {
-                if lines.iter().any(|line| intersects_interior(line, (p, q))) {
-                    None
-                } else {
-                    Some(p.area(q))
-                }
-            })
+        .flat_map(|(ip, p)| points.iter().skip(ip + 1).map(move |q| (p, q)))
+        .fold(0, |max, (p, q)| {
+            let a = p.area(q);
+            if a > max && !lines.iter().any(|line| intersects_interior(line, (p, q))) {
+                a
+            } else {
+                max
+            }
         })
-        .max()
-        .unwrap()
 }
 
 pub fn solve(lines: &[String]) -> Solution {
