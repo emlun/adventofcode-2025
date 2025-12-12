@@ -14,96 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::{
-    collections::HashSet,
-    fmt::{Debug, Formatter},
-};
-
 use crate::common::Solution;
 
-enum Rot {
-    Once,
-    Twice,
-    Thrice,
-}
-
 struct Present {
-    dim: usize,
-    pixels: Vec<HashSet<(usize, usize)>>,
+    w: usize,
+    h: usize,
+    pixels: usize,
 }
 
-impl Present {
-    fn new(dim: usize, pixels: HashSet<(usize, usize)>) -> Self {
-        debug_assert!(pixels.iter().all(|(x, y)| *x < dim && *y < dim));
-        let rot1 = Self::rotate(dim, &pixels, Rot::Once);
-        let rot2 = Self::rotate(dim, &pixels, Rot::Twice);
-        let rot3 = Self::rotate(dim, &pixels, Rot::Thrice);
-        Self {
-            dim,
-            pixels: [rot1, rot2, rot3]
-                .into_iter()
-                .flat_map(|rot| {
-                    let flipx = Self::flip(dim, &rot, true);
-                    let flipy = Self::flip(dim, &rot, false);
-                    [rot, flipx, flipy]
-                })
-                .fold(vec![pixels], |mut all, next| {
-                    if !all.contains(&next) {
-                        all.push(next);
-                    }
-                    all
-                }),
-        }
-    }
-
-    fn rotate(dim: usize, pixels: &HashSet<(usize, usize)>, r: Rot) -> HashSet<(usize, usize)> {
-        let d = dim - 1;
-        pixels
-            .iter()
-            .copied()
-            .map(|(x, y)| match r {
-                Rot::Once => (d - y, x),
-                Rot::Twice => (d - x, d - y),
-                Rot::Thrice => (y, d - x),
-            })
-            .collect()
-    }
-
-    fn flip(dim: usize, pixels: &HashSet<(usize, usize)>, flip_x: bool) -> HashSet<(usize, usize)> {
-        let d = dim - 1;
-        pixels
-            .iter()
-            .copied()
-            .map(|(x, y)| if flip_x { (d - x, y) } else { (x, d - y) })
-            .collect()
-    }
-
-    fn size(&self) -> usize {
-        self.pixels[0].len()
-    }
-}
-
-impl Debug for Present {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let rows: Vec<String> = (0..self.dim)
-            .map(|y| {
-                let px: Vec<String> = self
-                    .pixels
-                    .iter()
-                    .map(|px| {
-                        (0..self.dim)
-                            .map(|x| if px.contains(&(x, y)) { '#' } else { '.' })
-                            .collect()
-                    })
-                    .collect();
-                px.join("  ")
-            })
-            .collect();
-        write!(f, "{}", rows.join("\n"))
-    }
-}
-
-#[derive(Debug)]
 struct Region {
     dim: (usize, usize),
     num_presents: Vec<usize>,
@@ -118,13 +36,14 @@ fn solve_a(presents: &[Present], regions: &[Region]) -> usize {
                  num_presents,
              }| {
                 let space = dimx * dimy;
-                let bbox = num_presents
+                let (bboxw, bboxh) = num_presents
                     .iter()
                     .zip(presents)
-                    .map(|(n, p)| if *n > 0 { p.dim } else { 0 })
-                    .max()
-                    .unwrap_or(0);
-                let space_bboxed = (dimx / bbox) * (dimy / bbox);
+                    .map(|(n, p)| if *n > 0 { (p.w, p.h) } else { (0, 0) })
+                    .fold((0, 0), |(maxw, maxh), (w, h)| {
+                        (std::cmp::max(maxw, w), std::cmp::max(maxh, h))
+                    });
+                let space_bboxed = (dimx / bboxw) * (dimy / bboxh);
 
                 if num_presents.iter().copied().sum::<usize>() <= space_bboxed {
                     true
@@ -132,7 +51,7 @@ fn solve_a(presents: &[Present], regions: &[Region]) -> usize {
                     let presents_size: usize = num_presents
                         .iter()
                         .enumerate()
-                        .map(|(i, n)| n * presents[i].size())
+                        .map(|(i, n)| n * presents[i].pixels)
                         .sum();
                     if presents_size <= space {
                         todo!()
@@ -146,7 +65,7 @@ fn solve_a(presents: &[Present], regions: &[Region]) -> usize {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let (presents, regions): (Vec<Vec<&str>>, Vec<Region>) = lines
+    let (presents, regions): (Vec<Present>, Vec<Region>) = lines
         .iter()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
@@ -167,32 +86,20 @@ pub fn solve(lines: &[String]) -> Solution {
                 }) {
                     regions.push(region);
                 } else if let Some((_, _)) = line.split_once(':') {
-                    presents.push(Vec::new());
+                    presents.push(Present {
+                        w: 0,
+                        h: 0,
+                        pixels: 0,
+                    });
                 } else {
-                    let present = presents.last_mut().unwrap();
-                    present.push(line.trim());
+                    let p = presents.last_mut().unwrap();
+                    p.w = std::cmp::max(p.w, line.len());
+                    p.h += 1;
+                    p.pixels += line.chars().filter(|ch| *ch == '#').count();
                 }
                 (presents, regions)
             },
         );
-
-    let presents: Vec<Present> = presents
-        .into_iter()
-        .map(|lines| {
-            Present::new(
-                lines.len(),
-                lines
-                    .into_iter()
-                    .enumerate()
-                    .flat_map(|(y, line)| {
-                        line.chars()
-                            .enumerate()
-                            .filter_map(move |(x, ch)| (ch == '#').then_some((x, y)))
-                    })
-                    .collect(),
-            )
-        })
-        .collect();
 
     (solve_a(&presents, &regions).to_string(), "".to_string())
 }
